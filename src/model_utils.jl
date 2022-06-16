@@ -21,14 +21,25 @@ function glimpse(models, patch, xy)
 end
 
 
-function zoom_in(x, thetas, offset)
+function zoom_in(x, thetas, scale_offset)
     scale_dims = [1, 4]
-    thetas_new = thetas .+ offset
+    thetas_new = thetas .+ scale_offset
     sc_ = thetas_new[scale_dims, :]
     inv_scale = 1 ./ sc_
     thetas_new[scale_dims, :] = inv_scale
     thetas_new[5:6, :] = sc_ .* thetas_new[5:6, :]
     return sample_patch(x, thetas_new, sampling_grid)
+end
+
+function zoom(x, xy, d::String, sampling_grid)
+    xout = if d == "out"
+        sample_patch(x, sc_, xys, sampling_grid)
+    elseif d == "in"
+        zoom_in(x, xy, scale_offset)
+    else
+        throw(ArgumentError("zoom in or out pls"))
+    end
+    xout
 end
 
 # one-level model loss
@@ -86,7 +97,7 @@ function model_loss2(model, x, r)
     ẑ, xyt = glimpse(primary_nets, patch0, xy0)
     x̂ = Dx(ẑ)
     patch_t = Zygote.ignore() do
-        zoom(x, xyt, scale_offset) |> flatten
+        zoom_in(x, xyt, scale_offset) |> flatten
     end
 
     out_1 = model_forward(model, ẑ) |> flatten
@@ -96,7 +107,7 @@ function model_loss2(model, x, r)
         ẑ, xyt = glimpse(primary_nets, out_1, xyt)
         x̂ = Dx(ẑ)
         patch_t = Zygote.ignore() do
-            zoom(x, xyt, "in", sampling_grid) |> flatten
+            zoom_in(x, xyt, scale_offset) |> flatten
         end
         out_1 = model_forward(model, ẑ) |> flatten
         out += sample_patch(out_1, xyt, sampling_grid)
@@ -189,7 +200,7 @@ function update_batch(
     clamp_grads=false
 )
     loss, back = pullback(ps) do
-        rec_loss, klqp = model_loss(model, x, r)
+        rec_loss, klqp = model_loss2(model, x, r)
         full_loss = args[:α] * rec_loss + args[:β] * klqp
         if logger !== nothing
             Zygote.ignore() do
@@ -236,7 +247,7 @@ function test_model(model, test_data)
     L = 0.0f0
     rs = [randn(Float32, args[:π], args[:bsz]) for _ = 1:length(test_data)] |> gpu
     @inbounds for (i, x) in enumerate(test_data)
-        rec_loss, klqp = model_loss(model, x, rs[i])
+        rec_loss, klqp = model_loss2(model, x, rs[i])
         L += args[:α] * rec_loss + args[:β] * klqp
     end
     return L / length(test_data)

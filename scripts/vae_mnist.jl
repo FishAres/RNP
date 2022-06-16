@@ -16,7 +16,7 @@ include(srcdir("nn_utils.jl"))
 args = Dict(
     :img_size => (28, 28),
     :bsz => 64, # batch size
-    :π => 32, # latent dim (z) size
+    :π => 32, # latent dim (z) size - 32 for (Fashion)MNIST, 96 for omniglot
     :seqlen => 4, # number of glimpses
     :lsz => 64, # layer size of certain NNs
     :esz => 32, # rnn input size
@@ -27,6 +27,7 @@ args = Dict(
 )
 
 ## =====
+"substitute MNIST for your favorite dataset"
 train_digits, test_digits, test_labels = let
     train_digits, _ = MNIST.traindata(Float32)
     test_digits, test_labels = MNIST.testdata(Float32)
@@ -54,7 +55,7 @@ x = xs_test[1]
 ## =====
 xy_grid = get_pre_grid(args[:img_size]...)
 grid_ones = ones(Float32, 1, 784, args[:bsz])
-sampling_grid = vcat(xy_grid, grid_ones) |> gpu
+const sampling_grid = vcat(xy_grid, grid_ones) |> gpu
 
 ## =====
 # scale offset for shrinking an image
@@ -109,12 +110,15 @@ H =
 
 Encoder = get_encoder(; vae=true) |> gpu
 
+
 model = Encoder, H
 
 ps = Flux.params(model)
 
 ## =====
 opt = ADAM(args[:lr])
+
+
 
 ## =====
 @inbounds for epoch = 1:20
@@ -132,8 +136,6 @@ opt = ADAM(args[:lr])
     end
 
     L = test_model(model, xs_test)
-    @info "test loss: $(L)"
-    log_value(lg, "test loss", L)
 
     if epoch % 50 == 0
         model_path =
@@ -143,3 +145,12 @@ opt = ADAM(args[:lr])
 end
 
 ## =====
+
+ind = 0
+begin
+    ind += 1
+    digits, digit_patches, digit_im, patch_ims, xys, xys1 = get_digit_parts(xs_test[2], ind)
+    digit_im
+end
+
+

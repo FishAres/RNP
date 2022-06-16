@@ -20,7 +20,7 @@ end
 # caution - scale_offset is provided from outside the function input
 function affine_grid_generator(sampling_grid, thetas; args=args, sz=args[:img_size])
     bsz = size(thetas)[end]
-    thetas = thetas .+ scale_offset
+    thetas = isa(thetas, CuArray) ? thetas .+ scale_offset : thetas .+ cpu(scale_offset)
     thetas = reshape(thetas, 2, 3, bsz)
     tr_grid = batched_mul(thetas, sampling_grid)
     return reshape(tr_grid, 2, sz..., bsz)
