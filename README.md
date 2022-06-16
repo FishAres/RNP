@@ -1,8 +1,8 @@
-# RNP_clean
+# RNP
 
 This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
 to make a reproducible scientific project named
-> RNP_clean
+> RNP
 
 It is authored by FishAres.
 

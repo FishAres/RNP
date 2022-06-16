@@ -1,4 +1,4 @@
-name = "RNP_clean"
+name = "RNP"
 authors = ["FishAres"]
 
 [deps]

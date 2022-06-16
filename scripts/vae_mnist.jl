@@ -1,5 +1,5 @@
 using DrWatson
-@quickactivate "RNP_clean"
+@quickactivate "RNP"
 ENV["GKSwstype"] = "nul" # to make plots in headless mode
 
 using Distributions, Random
