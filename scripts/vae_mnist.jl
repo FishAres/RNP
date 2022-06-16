@@ -8,8 +8,8 @@ using Plots
 
 include(srcdir("hypernet_utils.jl"))
 include(srcdir("interp_utils.jl"))
-include(srcdir("plotting_utils.jl"))
 include(srcdir("model_utils.jl"))
+include(srcdir("nn_utils.jl"))
 
 ## =======
 
@@ -58,7 +58,7 @@ sampling_grid = vcat(xy_grid, grid_ones) |> gpu
 
 ## =====
 # scale offset for shrinking an image
-# e.g. offset = 3 => image scale in 1/range(3-1,3+1)
+# e.g. offset = 3 => image scale in 1/range(3-1,3+1) = (2,4)
 const scale_offset = let
     tmp = zeros(Float32, 6, 1) |> gpu
     tmp[[1, 4], :] .= 3.3f0
@@ -69,7 +69,7 @@ end
 
 th_size = 6 # number of parameters for spatial transformer (6)
 
-# (x̂(t), a(t) -> RNN input)
+# patch encoder (x̂(t), a(t) -> RNN input)
 enc_primary = Chain(
     Parallel(vcat, Dense(784, 64), Dense(th_size, 64)),
     Dense(128, 64),
@@ -111,12 +111,7 @@ Encoder = get_encoder(; vae=true) |> gpu
 
 model = Encoder, H
 
-
 ps = Flux.params(model)
-
-## =====
-inds = sample(1:args[:bsz], 6; replace=false)
-p = plot_recs(model, x, inds)
 
 ## =====
 opt = ADAM(args[:lr])

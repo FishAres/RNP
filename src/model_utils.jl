@@ -11,6 +11,16 @@ sample_z(μ, logvar, r) = @. μ + r * (exp(logvar))
 
 kl_loss(μ, logvar) = sum(@. (exp(2.0f0 * logvar) + μ^2 - 2.0f0 * logvar - 1.0f0))
 
+
+function glimpse(models, patch, xy)
+    Encx, fx, fa, Dx, Da = models
+    ê = Encx((flatten(patch), xy))
+    x_ = fx(ê)
+    xyt = Da(fa(ê))
+    x_, xyt
+end
+
+
 function zoom_in(x, thetas, offset)
     scale_dims = [1, 4]
     thetas_new = thetas .+ offset
